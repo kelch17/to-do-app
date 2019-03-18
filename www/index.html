@@ -1,0 +1,321 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+  <script src="components/loader.js"></script>
+  <script src="lib/angular/angular.min.js"></script>
+  <script src="lib/onsenui/js/onsenui.min.js"></script>
+  <script src="lib/onsenui/js/angular-onsenui.min.js"></script>
+
+  <link rel="stylesheet" href="components/loader.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script>
+    ons.bootstrap()
+      .controller('AppController', function ($scope, $http) {
+        $scope.tasks = [];
+        $scope.taskModel = { Title: '', Category: '', Content: '', DateTime: '' }
+
+        var getAllNote = function () {
+          $http.get('http://192.168.1.81:5001/note/5c8a8aae1c9d44000010eb56').then(function (response) {
+            //console.log(response.data);
+            $scope.tasks = response.data;
+
+          }).catch(function (ex) {
+            console.log(ex);
+          });
+        };
+
+        $http.get('http://192.168.1.81:5001/categories').then(function (res) {
+          console.log('[Categories]', res.data);
+          $scope.categories = res.data;
+        }).catch(function () {
+
+        });
+
+        getAllNote();
+
+        $scope.delTask = function (id) {
+          //var index = $scope.taskModel.index;
+          //var taskId = $scope.tasks[index]._id;
+          var request = {
+            method: 'DELETE',
+            url: 'http://192.168.1.81:5001/note/5c8a8aae1c9d44000010eb56/'+id,
+          }
+          $http(request).then(function (del) {
+            console.log('[Delete]', del.data);
+            $scope.messageAlert = 'Task successfully deleted !'
+            $scope.messageDialog();
+          }).catch(function (err) {
+            console.log('[Error Message] ', err.data);
+
+          });
+
+
+          // alert( $scope.tasks[index].title);
+          $scope.removedTask = $scope.tasks.splice($scope.taskModel.index, 1);
+          console.log('[Removed Task]', $scope.removedTask);
+          $scope.taskModel = { Title: '', Category: '', Content: '', DateTime: '' };
+
+        }
+
+        //Create Function
+
+        $scope.addTask = function () {
+          $scope.loading = false;
+          $scope.successMessage = false;
+
+          if ($scope.taskModel.Title !== '') {
+
+            var req = {
+              method: 'POST',
+              url: 'http://192.168.1.81:5001/note/5c8a8aae1c9d44000010eb56',
+              data: $scope.taskModel
+            }
+
+            $http(req).then(function (res) {
+              console.log('[Create Task]', res.data);
+              $scope.messageAlert = 'Task successfully created !';
+              //  getAllTodos();
+              $scope.tasks.push();
+              $scope.messageDialog();
+            }).catch(function (err) {
+              console.log('[Error Message] ', err.data);
+
+            });
+
+            // $scope.tasks.push($scope.taskModel);
+            //dialog.hide();
+            $scope.taskModel = { Title: '', Category: '', Content: '', DateTime: '' }
+            $scope.errorMessage = '';
+          }
+          else { $scope.errorMessage = 'Activity  Or Category field is empty!!!'; }
+
+        }
+
+        //Update Function
+        $scope.updateTask = function () {
+          var index = $scope.taskModel.index;
+          //var taskId=$scope.tasks[index]._id;
+          var request = {
+            method: 'PUT',
+            url: 'http://192.168.1.81:5001/note/5c8a8aae1c9d44000010eb56' + index,
+            data: $scope.taskModel
+          }
+          $http(request).then(function (del) {
+            console.log('[Update]', del.data);
+            $scope.messageAlert = 'Task successfully updated !'
+            $scope.messageDialog();
+          }).catch(function (err) {
+            console.log('[Error Message] ', err.data);
+
+          });
+
+
+          // alert( $scope.tasks[index].title);
+          $scope.removedTask = $scope.tasks.splice($scope.taskModel.index, 1);
+          console.log('[Removed Task]', $scope.removedTask);
+          $scope.taskModel = { Title: '', Category: '', Content: '', DateTime: '' };
+          dialog.hide();
+        }
+
+        //Edit Function
+        $scope.edit = function (index) {
+          // alert( $scope.tasks[index].title);
+          $scope.taskModel = { Title:$scope.tasks[index].Title, Category: $scope.tasks[index].Category, Content: $scope.tasks[index].Content, DateTime: $scope.tasks[index].DateTime, index: index }
+          console.log($scope.taskModel);
+          myNavigator.pushPage('page2.html');
+          $scope.messageAlert = 'Task successfully updated !'
+
+        }
+        //Cancel Function
+        $scope.cancel = function () {
+          $scope.taskModel = { Title:'', Category: '', Content: '', DateTime: '' };
+          dialog.hide();
+        }
+
+
+        $scope.messageDialog = function () {
+          if (this.dialog) {
+            this.dialog.show();
+          } else {
+            ons.createElement('success.html', { parentScope: $scope, append: true })
+              .then(function (dialog) {
+                this.dialog = dialog;
+                dialog.show();
+              }.bind(this));
+          }
+        }.bind(this);
+
+
+        this.showDialog = function () {
+          if (this.dialog) {
+            this.dialog.show();
+          } else {
+            ons.createElement('dialog.html', { parentScope: $scope, append: true })
+              .then(function (dialog) {
+                this.dialog = dialog;
+                dialog.show();
+              }.bind(this));
+          }
+        }.bind(this);
+
+
+        this.init = function (e) {
+          // Ensure the emitter is the current page, not a nested one
+          if (e.target === e.currentTarget) {
+            var page = e.target;
+            // Safely access data
+            console.log('init event', page.data);
+          }
+        }
+
+        /*var bg = ['#FFFFFF','#C0C0C0','#808080','#000000','#FF0000','#800000','#FFFF00','#808000','#00FF00','#008000','#00FFFF','#008080','#0000FF','#000080','#FF00FF','#FF00FF']
+         curBg = Bg[index];
+     
+         var card =document.querySelectorAll("ons-card");
+     
+         card.forEach(function(ele,i){
+           CurBg = Bg[i];
+           ele.style.background = CurBg;
+         })*/
+      }); 
+  </script>
+</head>
+<ons-navigator swipeable var="myNavigator" page="page1.html"></ons-navigator>
+<template id="page1.html">
+
+  <!-----------Index Page-->
+  <ons-page ng-controller="AppController as app">
+    <!-- <ons-toolbar>
+      <div class="center">Search input</div>
+    </ons-toolbar>
+    
+    <p style="text-align: center; margin-top: 20px">
+      <ons-search-input style="padding:inherit" placeholder="Search"></ons-search-input>
+    </p> -->
+    <!-- <ons-toolbar id="back" style="background-color:#0076ff"> -->
+      <!-- <div class="left">
+        <ons-toolbar-button>
+          <ons-icon icon="md-menu"></ons-icon>
+        </ons-toolbar-button> -->
+    <ons-toolbar id="back" style="background-color:#0076ff">
+      <div class="left" style="text-align: left; color: white; font-family: Georgia, 'Times New Roman', Times, serif; font-size: xx-large; font-style: italic" >
+      NOTES
+      </div>
+    <div class="left">
+      <ons-toolbar-button>
+      <ons-icon icon="md-menu"></ons-icon>
+    </ons-toolbar-button>
+    </div>
+
+    </ons-toolbar class="top">
+
+    <div class="users" ng-repeat="user in tasks">
+      <ons-card style="background-color: whitesmoke;">
+        <div class="title">
+
+          <!--<label class="left">
+                  <ons-checkbox input-id="check-1"></ons-checkbox>
+                </label>-->
+          <label for="check-1" class="center">
+           Title:{{user.Title}}
+      
+            <ons-icon style="float:right;" position: bottom right;" ng-click="delTask(user._id)" icon="fa-trash" ></ons-icon>
+            <ons-icon style="float:right; margin-right:10px"" ng-click=" edit($index)" icon="fa-edit"></ons-icon>
+          </label>
+          <br>
+          <br>
+          <label>
+                    Category:{{user.Category}}
+                  </label>
+                  
+                  <!-- <label>
+                    {{user.Content}}
+                  </label>
+
+                 <label >{{user.DateTime}}</label>   -->
+
+        </div>
+      </ons-card>
+    </div>
+    <ons-fab position="bottom right" style="box-shadow: 5px 5px darkgray; color:white;background-color: #0076ff;" ng-click="myNavigator.pushPage('page2.html', {data: {title: 'Page 2'}})">
+      <ons-icon icon="md-plus"></ons-icon>
+    </ons-fab>
+    <!-- <ons-toolbar>
+      <div class="left">
+        <ons-toolbar-button>
+          <ons-icon icon="md-menu"></ons-icon>
+        </ons-toolbar-button> -->
+
+    </ons-toolbar>
+  </ons-page>
+</template>
+
+<!----Content Page-->
+<template id="page2.html">
+  <ons-page ng-controller="AppController as app">
+    <ons-toolbar style="background-color: #0076ff">
+      <div class="left" style="color:white">
+        <ons-back-button style="color:white";></ons-back-button>
+      </div>
+      <div class="right">
+        <ons-icon icon="fa-check"
+          style="float:right;margin-top:1px; margin-left:100px;margin-right:20px;font-size:20px;color:white"
+          ng-click="addTask()"></ons-icon>
+      </div>
+    </ons-toolbar>
+
+    <span style="color:red;text-align:center"><strong>{{errorMessage}}</strong></span>
+    <div style="margin-left:20px">
+      <ons-scroller style="height: 200px; width: 100%">
+        <p>
+          <ons-input modifier="underbar" placeholder="Enter The Activity" ng-model="taskModel.Title"></ons-input>
+        </p>
+        <br>
+        <p>
+          <ons-select ng-model="taskModel.Category" id="choose-sel">
+            <option>Choose One</option>
+            <option ng-repeat="Category in categories">{{Category.Name}}</option>
+
+
+          </ons-select>
+        </p>
+        <br />
+        <p>
+          <textarea class="textarea" rows="3" placeholder="content" ng-model="taskModel.Content"
+            style="border-radius:10px; height:200px; width:300px"></textarea>
+        </p>
+        </p>
+        <!-- <p>
+                  <ons-input type="time"modifier="underbar" placeholder="Enter the date"ng-model="taskModel.date"></ons-input>
+                </p> -->
+      </ons-scroller>
+    </div>
+
+  </ons-page>
+</template>
+
+<!----Success Page-->
+<template id="success.html">
+  <ons-dialog id="dialog-3" var="dialog">
+    <div style="text-align: center; padding: 10px;">
+      <p>
+        {{messageAlert}}
+        <p>
+
+          <p>
+            <ons-button ng-click="dialog.hide()">Close</ons-button>
+          </p>
+    </div>
+  </ons-dialog>
+</template>
+</body>
+
+</html>
